@@ -1,4 +1,13 @@
 #!/bin/sh
+#$ -N om_compal_sep
+#$ -S /bin/sh
+#$ -l h_vmem=2G
+#$ -l m_mem_free=2G
+#$ -pe smp 16
+#$ -wd /mnt/isilon/emanuel_lab/bionano_assemblies_BACKUP/2020_Bionano_DLE1_Assembly/for_github
+
+. /etc/profile
+module load sam-bcf-tools/current
 
 # requires 
 # RefAligner
@@ -36,6 +45,8 @@ COMPLEX_START=$(echo $COMPLEX_START | awk -v p="$FIVE_PADDING" '{print $1-p}')
 COMPLEX_END=$(echo $COMPLEX_END | awk -v p="$THREE_PADDING" '{print $1+p}')
 
 mkdir -p "$SAMPLE"_fix_nested_tmp_results
+gzip -d $WG_REFERENCE
+WG_REFERENCE=$(echo $WG_REFERENCE | sed 's/\.gz//g')
 
 ./scripts/RefAligner \
 -i results/"$SAMPLE"_separate_alignments/$QCMAP_NESTED \
@@ -81,6 +92,7 @@ done <"$SAMPLE"_fix_nested_tmp_results/$SAMPLE"_nested_ids_to_get"
 
 
 # clean-up
+gzip $WG_REFERENCE
 mkdir -p results/"$SAMPLE"_fix_nested
 mv -f "$SAMPLE"_fix_nested_tmp_results/$XMAP_NESTED".fix" results/"$SAMPLE"_fix_nested/$XMAP_NESTED
 mv -f "$SAMPLE"_fix_nested_tmp_results/$QCMAP_NESTED".fix" results/"$SAMPLE"_fix_nested/$QCMAP_NESTED
