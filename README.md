@@ -4,7 +4,7 @@
 
 * Samtools
 * Python >=3.7
-* Bionano's RefAligner (included in repo's scripts)
+* Bionano's RefAligner (included in repo's scripts) but see here: https://bionanogenomics.com/support/software-downloads/
 
 ## Operations
 
