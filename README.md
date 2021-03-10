@@ -13,11 +13,23 @@
 * run in order and from the root directory (not scripts but one level up):
 
 ```
-scripts/complex_region_alignment.sh
+sh scripts/complex_region_alignment.sh
 
-scripts/separate_alignment.sh
+sh scripts/separate_alignment.sh
 
-scripts/fix_nested.sh
+sh scripts/fix_nested.sh
 
-scripts/extract_query_labels_anchor.sh
+sh scripts/extract_query_labels_anchor.sh
+
+python scripts/find_anchor_and_complex_alignment_matches.py
+
+sh scripts/filter_maps_from_complex.sh
+
+sh scripts/merge_into_one_cmap_self_align.sh
+
+python scripts/filter_molecules_self_alignment.py
+
+python scripts/proportional_comparisons.py
+
+sh scripts/long_haps.sh
 ```
