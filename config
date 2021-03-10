@@ -3,7 +3,7 @@ SAMPLE=416477
 BNX=data/416477_subset.bnx
 
 # to fix the nested molecules' ambiguous mappings:
-WG_REFERENCE=data/hg38_DLE1_0kb_0labels.cmap
+WG_REFERENCE=data/hg38_DLE1_0kb_0labels.cmap.gz
 
 # only 2 builds available, hg19 and hg38
 # type either exactly as I have them
