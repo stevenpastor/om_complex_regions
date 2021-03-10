@@ -6,9 +6,9 @@
 * Python >=3.7
 * Bionano's RefAligner (included in repo's scripts)
 
+## Operations
 
 * edit config file
-
 * run in order:
 
 ```
