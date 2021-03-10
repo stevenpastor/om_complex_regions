@@ -10,7 +10,7 @@
 ## Operations
 
 * edit config file
-* run in order:
+* run in order and from the root directory (not scripts but one level up):
 
 ```
 scripts/complex_region_alignment.sh
@@ -18,4 +18,6 @@ scripts/complex_region_alignment.sh
 scripts/separate_alignment.sh
 
 scripts/fix_nested.sh
+
+scripts/extract_query_labels_anchor.sh
 ```
