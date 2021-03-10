@@ -1,5 +1,12 @@
 # om_complex_regions
 
+## Requirements
+
+* Samtools
+* Python >=3.7
+* Bionano's RefAligner (included in repo's scripts)
+
+
 * edit config file
 
 * run in order:
