@@ -1,13 +1,4 @@
 #!/bin/sh
-#$ -N om_compal_sep
-#$ -S /bin/sh
-#$ -l h_vmem=2G
-#$ -l m_mem_free=2G
-#$ -pe smp 16
-#$ -wd /mnt/isilon/emanuel_lab/bionano_assemblies_BACKUP/2020_Bionano_DLE1_Assembly/for_github
-
-. /etc/profile
-module load sam-bcf-tools/current
 
 # requires 
 # RefAligner
