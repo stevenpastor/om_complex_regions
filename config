@@ -1,0 +1,52 @@
+# base sample name and its corresponding BNX:
+SAMPLE=416477
+BNX=data/416477_subset.bnx
+
+# to fix the nested molecules' ambiguous mappings:
+WG_REFERENCE=data/hg38_DLE1_0kb_0labels.cmap
+
+# only 2 builds available, hg19 and hg38
+# type either exactly as I have them
+# so I don't have to check for case, etc.
+COMPLEX_GENOME=hg38
+
+# chromosome of region
+# do not include "chr" here
+COMPLEX_CHR=22
+
+# start/end of complexity only
+# do not include any anchor padding
+COMPLEX_START=18200000
+COMPLEX_END=18900000
+
+# 5' and 3' padding outside the start and end
+# 400kb is a good start
+FIVE_PADDING=400000
+THREE_PADDING=500000
+
+# number of labels going into complex region (no good answer here-this is domain knowledge)
+# know that ~15-17 labels per 100kb, so keep that in mind:
+# originally chose 16 but this is aggressive
+COMPLEX_LABELS=8
+
+# number of anchor labels desire a molecule to have mapped to reference
+# >= than this number - for the self_alignments
+# this is AFTER the FLANKING_COMPLEX requirement, so if a molecule meets that requirement 
+# but fails this one, it is removed from self-alignment consideration
+ANCHOR_LABELS=8
+
+# distance outside complexity - for separate_alignment.sh only
+# keep in mind different regions have different amounts of 
+# labels; this is for separating the molecules into anchored, nested, and spanning groups:
+FLANKING_COMPLEX=100000
+
+
+##############
+# Deprecated:
+# k means cluster collapse threshold
+# i.e., if have 10 molecules and want at least 80/20 split of each cluster, then put 0.8 here
+# if the 80/20 split is not met (i.e., 9 molecules in one cluster and 1 in the other)
+# then the 2 clusters are collapsed into 1:
+#K_THRESHOLD=0.8
+
+
