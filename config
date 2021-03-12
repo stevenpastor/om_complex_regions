@@ -3,7 +3,7 @@ SAMPLE=416477
 BNX=data/416477_subset.bnx
 
 # to fix the nested molecules' ambiguous mappings:
-WG_REFERENCE=data/hg38_DLE1_0kb_0labels.cmap.gz
+WG_REFERENCE=data/hg38_DLE1_0kb_0labels.cmap
 
 # only 2 builds available, hg19 and hg38
 # type either exactly as I have them
@@ -41,12 +41,10 @@ ANCHOR_LABELS=8
 FLANKING_COMPLEX=100000
 
 
-##############
-# Deprecated:
 # k means cluster collapse threshold
 # i.e., if have 10 molecules and want at least 80/20 split of each cluster, then put 0.8 here
 # if the 80/20 split is not met (i.e., 9 molecules in one cluster and 1 in the other)
 # then the 2 clusters are collapsed into 1:
-#K_THRESHOLD=0.8
+K_THRESHOLD=0.8
 
 
