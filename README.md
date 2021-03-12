@@ -32,4 +32,6 @@ python scripts/filter_molecules_self_alignment.py
 python scripts/proportional_comparisons.py
 
 sh scripts/long_haps.sh
+
+sh scripts/all_vs_all_scores_matrix.sh
 ```
