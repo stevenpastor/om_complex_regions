@@ -2,8 +2,8 @@
 
 ## Requirements
 
-* Samtools
-* Python >=3.7
+* samtools >=1.9
+* python >=3.7
 * numpy >=1.18.1
 * pandas >=1.2.2
 * scikit-learn >=0.23.2
