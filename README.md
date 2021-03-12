@@ -4,6 +4,10 @@
 
 * Samtools
 * Python >=3.7
+* numpy >=1.18.1
+* pandas >=1.2.2
+* scikit-learn >=0.23.2
+* scipy >=1.5.3
 * Bionano's RefAligner (included in repo's scripts) but see here: https://bionanogenomics.com/support/software-downloads/
 * Linux environment: multi-threaded
 
