@@ -27,17 +27,25 @@ num=1
 while read line
 do
 
+    # start clean:
+    rm -f "$SAMPLE"_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END"_"$num".xmap
+
     # place line into new file with new delimiter:
     echo $line | tr ' ' '\n' | tr '_' '\t' > fixed_trav
 
     # use new file for traversal:
     while read h1 h2 h3
     do
-        grep "#" results/416477_complex_alignments/416477_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END".xmap > "$SAMPLE"_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END"_"$num".xmap
         grep -v "#" results/416477_complex_alignments/416477_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END".xmap | awk -v id="$h1" '$2 == id' >> "$SAMPLE"_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END"_"$num".xmap
         grep -v "#" results/416477_complex_alignments/416477_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END".xmap | awk -v id="$h2" '$2 == id' >> "$SAMPLE"_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END"_"$num".xmap
         grep -v "#" results/416477_complex_alignments/416477_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END".xmap | awk -v id="$h3" '$2 == id' >> "$SAMPLE"_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END"_"$num".xmap
     done <fixed_trav
+
+    # add header and obtain unique lines only (redundancy from above due to connections):
+    grep "#" results/416477_complex_alignments/416477_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END".xmap > "$SAMPLE".tmp
+    sort "$SAMPLE"_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END"_"$num".xmap | uniq | sort >> "$SAMPLE".tmp
+    rm -f "$SAMPLE"_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END"_"$num".xmap
+    mv -f "$SAMPLE".tmp "$SAMPLE"_chr"$COMPLEX_CHR"_"$COMPLEX_START"_"$COMPLEX_END"_"$num".xmap
 
     # increment for >1 haplotype:
     num=$((num+1)) 
@@ -51,4 +59,3 @@ cp -f results/416477_complex_alignments/416477_chr"$COMPLEX_CHR"_"$COMPLEX_START
 
 # clean-up:
 rm -f fixed_trav
-
