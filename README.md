@@ -39,5 +39,7 @@ sh scripts/long_haps.sh
 
 sh scripts/all_vs_all_scores_matrix.sh
 
+sh scripts/submit_kmeans.sh
+
 sh scripts/final_molecules.sh
 ```
