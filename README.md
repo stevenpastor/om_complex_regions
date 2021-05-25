@@ -17,6 +17,8 @@
 * run in order and from the root directory (not scripts but one level up):
 
 ```
+python scripts/initial_check.py
+
 sh scripts/complex_region_alignment.sh
 
 sh scripts/separate_alignment.sh
