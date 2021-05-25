@@ -108,11 +108,11 @@ def closest(lst, K):
 ## Get coordinates of molecules relative to the contig
 ## This takes a long time, maybe there is a quicker way to do this
 def getRelevantContigCoordinates(contig):
-    merged_xmap_file = 'results/{}_initial_genome_check/{}_fullContigs.xmap'.format(sample, sample)
+    merged_xmap_file = '{}/{}_fullContigs.xmap'.format(output_dir, sample)
     header = get_header_line(merged_xmap_file)
     merged_xmap_df = pd.read_csv(merged_xmap_file, sep='\t', comment='#', names=header, index_col=None)
 
-    merged_qmap_file = 'results/{}_initial_genome_check/{}_fullContigs_q.cmap'.format(sample, sample)
+    merged_qmap_file = '{}/{}_fullContigs_q.cmap'.format(output_dir, sample)
     header = get_header_line(merged_qmap_file)
     merged_qmap_df = pd.read_csv(merged_qmap_file, sep='\t', comment='#', names=header, index_col=None)
 
