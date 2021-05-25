@@ -1,6 +1,6 @@
 # base sample name and its corresponding BNX:
-SAMPLE=416477
-BNX=data/416477_subset.bnx
+SAMPLE=12549A
+BNX=data/12549A_all.bnx
 
 # to fix the nested molecules' ambiguous mappings:
 WG_REFERENCE=data/hg38_DLE1_0kb_0labels.cmap
@@ -12,17 +12,17 @@ COMPLEX_GENOME=hg38
 
 # chromosome of region
 # do not include "chr" here
-COMPLEX_CHR=22
+COMPLEX_CHR=X
 
 # start/end of complexity only
 # do not include any anchor padding
-COMPLEX_START=18200000
-COMPLEX_END=18900000
+COMPLEX_START=103926190
+COMPLEX_END=104121726
 
 # 5' and 3' padding outside the start and end
 # 400kb is a good start
 FIVE_PADDING=400000
-THREE_PADDING=500000
+THREE_PADDING=400000
 
 # number of labels going into complex region (no good answer here-this is domain knowledge)
 # know that ~15-17 labels per 100kb, so keep that in mind:
