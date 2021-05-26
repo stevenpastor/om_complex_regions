@@ -112,7 +112,6 @@ def getRelevantContigCoordinates(contig):
     merged_rmap_file = '{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged_r.cmap'.format(sample, contig)
     header = get_header_line(merged_rmap_file)
     merged_rmap_df = pd.read_csv(merged_rmap_file, sep='\t', comment='#', names=header, index_col=None)
-    header_lines.clear()
 
     ## Get relevant positions on contig
     alignment = merged_xmap_df.loc[0, 'Alignment']
