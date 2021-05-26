@@ -45,6 +45,7 @@ molecule_dir = '{}_output/contigs/exp_refineFinal1/alignmol/merge'.format(sample
 
 ## Save header of mapping files
 def read_header_comments(file):
+    header_lines.clear()
     for row in file:
         if row[0] == '#':
             header_lines.append(row)
@@ -71,34 +72,26 @@ def output_file(df_to_output, output_filename):
     df_to_output.to_csv('data_file.txt', sep='\t', header=None, index=None)
     cmd = 'cat header_file.txt data_file.txt > {} && rm header_file.txt && rm data_file.txt'.format(output_filename)
     os.system(cmd)
-    header_lines.clear()
 
 
 ## Open xmap file and check for contigs that span the entire region
 ## Should we have a 5kb buffer for what is considered spanning all the way? 
-def open_xmap_file(xmap_file, chrom, start, end, output):
+def open_xmap_file(xmap_file, chrom, start, end):
     header = get_header_line(xmap_file)
     xmap_df = pd.read_csv(xmap_file, sep='\t', comment='#', names=header, index_col=None)
     xmap_df = xmap_df.query("RefContigID == @chrom")
     sub_df = xmap_df.query("RefStartPos <= @start and RefEndPos >= @end")
 
-    ## We want to know which genomes have 2 (or more) full-length contigs. Save list of genomes. 
-    if sub_df.shape[0] >= 2: 
-        if sample not in list_fullcontig_genomes:
-            list_fullcontig_genomes.append(sample)         
-
-        output_file(sub_df, output)
-
-        return sub_df
+    return sub_df
 
 
 ## Get contigs from cmap file
-def open_cmap_file(cmap_file, IDsToExtract, output):
+def open_cmap_file(cmap_file, IDsToExtract):
     header = get_header_line(cmap_file)
     cmap_df = pd.read_csv(cmap_file, sep='\t', comment='#', names=header, index_col=None)
-    cmap_df = cmap_df.query(" CMapId == @IDsToExtract")
+    cmap_df = cmap_df.query("CMapId == @IDsToExtract")
 
-    output_file(cmap_df, output)
+    return cmap_df
 
 
 def closest(lst, K):
@@ -165,7 +158,7 @@ def extract_molecules(contigs_list):
             ## Extract from xmap
             xmap_file = '{}/exp_refineFinal1_contig{}.xmap'.format(molecule_dir, contig)
             header = get_header_line(xmap_file)
-            xmap_df = pd.read_csv(xmap_file, sep='\t', comment='#', names=header, index_col=0)
+            xmap_df = pd.read_csv(xmap_file, sep='\t', comment='#', names=header, index_col=None)
             molecule_df = xmap_df.query("RefStartPos < @contigEndPos and RefEndPos > @contigStartPos")
             molecules_list = list(molecule_df['QryContigID'])
 
@@ -177,7 +170,7 @@ def extract_molecules(contigs_list):
             ## Extract from qmap
             qmap_file = '{}/exp_refineFinal1_contig{}_q.cmap'.format(molecule_dir, contig)
             header = get_header_line(qmap_file)
-            qmap_df = pd.read_csv(qmap_file, sep='\t', comment='#', names=header, index_col=0)
+            qmap_df = pd.read_csv(qmap_file, sep='\t', comment='#', names=header, index_col=None)
             sub_qmap_df = qmap_df.query("CMapId in @molecules_list")
 
             qmap_output = '{}/{}_fullContig{}_molecules_q.cmap'.format(output_dir, sample, contig)
@@ -198,15 +191,19 @@ def main():
     merged_cmap = '{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged_q.cmap'.format(sample)
     output_fullcontigs_qcmap = '{}/{}_fullContigs_q.cmap'.format(output_dir, sample)
 
-
-    fullcontigs_df = open_xmap_file(merged_xmap, complex_chr, complex_start, complex_end, output_fullcontigs_xmap)
-    contigs_list = fullcontigs_df['QryContigID'].tolist()
-    if len(contigs_list) >= 2:
-        open_cmap_file(merged_cmap, contigs_list, output_fullcontigs_qcmap)
+    fullcontigs_df = open_xmap_file(merged_xmap, complex_chr, complex_start, complex_end)
+    ## We want to know which genomes have 2 (or more) full-length contigs. Save list of genomes. 
+    ## Process rest of script if there are 2 full-length contigs. 
+    if fullcontigs_df.shape[0] >= 2: 
+        if sample not in list_fullcontig_genomes:
+            list_fullcontig_genomes.append(sample)         
+        output_file(fullcontigs_df, output_fullcontigs_xmap)
+        contigs_list = fullcontigs_df['QryContigID'].tolist()
+        cmap_df = open_cmap_file(merged_cmap, contigs_list)
+        output_file(cmap_df, output_fullcontigs_qcmap)
         extract_molecules(contigs_list)
     else: 
-        print("Only {} full-length contigs for sample {}".format(len(contigs_list), sample))
-
+        print("Only {} full-length contigs for sample {}".format(fullcontigs_df.shape[0], sample))
 
     with open('results/{}_initial_genome_check/genomes_completeContigs_list.txt'.format(sample), 'w') as filehandle:
         for genomes in list_fullcontig_genomes:
