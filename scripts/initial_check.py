@@ -9,10 +9,8 @@ File paths may need to be changed depending on assembly version.
 Needs more testing if the correct molecules are being extracted.
 Does not extract from bnx file currently. 
 
-Last updated: JW 5/25/2021
+Last updated: JW 5/27/2021
 """
-
-from numpy.core.fromnumeric import compress
 import pandas as pd
 import csv
 import re
