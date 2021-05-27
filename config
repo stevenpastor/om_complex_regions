@@ -2,6 +2,10 @@
 SAMPLE=12549A
 BNX=data/12549A_all.bnx
 
+# assembly compression type
+# tar or zip
+COMPRESSION_TYPE=tar
+
 # to fix the nested molecules' ambiguous mappings:
 WG_REFERENCE=data/hg38_DLE1_0kb_0labels.cmap
 
