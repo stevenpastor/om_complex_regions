@@ -6,6 +6,7 @@ Helpful if some regions where we may need to go quite a bit 5' and/or 3' of the 
 
 
 Notes:
+Still need to figure out how to count molecules: convert start/end position to molecule position. 
 
 
 Last updated: JW 5/27/2021
