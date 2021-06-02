@@ -19,6 +19,9 @@
 ```
 python scripts/initial_check.py
 
+(run on full-spanning contigs from initial_check.py)
+python scripts/label_count.py
+
 sh scripts/complex_region_alignment.sh
 
 sh scripts/separate_alignment.sh

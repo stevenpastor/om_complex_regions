@@ -4,12 +4,14 @@ Get the molecules per CMAP and see if they support the 2 haplotypes.
 If they do, then the genome is done and does not need the pipeline.
 
 Notes:
-Script assumes assemblies are unzipped and named sample_output inside data folder.
+Run in main directory, not scripts directory. 
+Script assumes assemblies are unzipped and named data/sample_output.
 File paths may need to be changed depending on assembly version.
 Needs more testing if the correct molecules are being extracted.
-Does not extract from bnx file currently. 
+Assumes bnx file is in the output/ folder and is unzipped.
+Newer assemblies do not have bnx files so need to transfer into folder.
 
-Last updated: JW 5/27/2021
+Last updated: JW 6/2/2021
 """
 import pandas as pd
 import csv
@@ -40,9 +42,14 @@ with open("config", 'r') as c:
 
 header_lines = []
 list_fullcontig_genomes = []
-output_dir = 'results/{}_initial_genome_check'.format(sample) ## Where the output files will appear
 
-## Get paths within de novo assembly folder for different versions
+
+""" Files and directories; Get paths within de novo assembly folder for different versions """
+output_dir = 'results/{}_initial_genome_check'.format(sample) ## Where the output files will appear
+merged_xmap = 'data/{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged.xmap'.format(sample)
+merged_cmap = 'data/{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged_q.cmap'.format(sample)
+merged_rmap = 'data/{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged_r.cmap'.format(sample)
+bnxfile = 'data/{}_output/all.bnx'.format(sample)
 if compression_type == "zip":
     molecule_dir = 'data/{}_output/contigs/exp_refineFinal1/alignmol/merge'.format(sample) ## Where the molecule xmap, qmap, rmap are (no BNX file in this assembly)
 else: 
@@ -130,7 +137,6 @@ def closest(lst, K):
 
 
 ## Get coordinates of molecules relative to the contig
-## This takes a long time, maybe there is a quicker way to do this
 def getRelevantContigCoordinates(contig):
     print("Getting relevant contig coordinates to molecule coordinates")
     merged_xmap_file = '{}/{}_fullContigs.xmap'.format(output_dir, sample)
@@ -141,9 +147,8 @@ def getRelevantContigCoordinates(contig):
     header = get_header_line(merged_qmap_file)
     merged_qmap_df = pd.read_csv(merged_qmap_file, sep='\t', comment='#', names=header, index_col=None)
 
-    merged_rmap_file = 'data/{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged_r.cmap'.format(sample, contig)
-    header = get_header_line(merged_rmap_file)
-    merged_rmap_df = pd.read_csv(merged_rmap_file, sep='\t', comment='#', names=header, index_col=None)
+    header = get_header_line(merged_rmap)
+    merged_rmap_df = pd.read_csv(merged_rmap, sep='\t', comment='#', names=header, index_col=None)
 
     ## Get relevant positions on contig
     print("Getting relevant positions on contig")
@@ -183,6 +188,10 @@ def getRelevantContigCoordinates(contig):
     contigqend = alignment_df.loc[str(refdictend), 'querysite']
     contigStartPos = min([querydict[int(contigqstart)], querydict[int(contigqend)]]) # convert site ID to contig position
     contigEndPos = max([querydict[int(contigqstart)], querydict[int(contigqend)]])
+
+    with open('{}/contig{}_startEndPos.txt'.format(output_dir, contig), 'a') as filehandle:
+        filehandle.write('START=%s\n' % contigStartPos)
+        filehandle.write('END=%s\n' % contigEndPos)
 
     return contigStartPos, contigEndPos
 
@@ -225,30 +234,43 @@ def extract_molecules(contigs_list):
         os.system(cmd)
 
         ## Extract from BNX file instead
-        # for molecule in molecules_list:
-        #     bnxfile = '{}_output'.format(sample)
+        if  os.path.exists('data/{}_output/all.bnx'.format(sample)):
+            for molecule in molecules_list:
+                cmd = "grep $'^0\t{}\t' -A 7 {} > {}/{}_molecule.bnx".format(str(molecule), bnxfile, output_dir, str(molecule))
+                os.system(cmd)
+
+            cmd = 'cat data/{}_output/all.bnx | grep "#" > bnxheader'.format(sample)
+            os.system(cmd)
+            cmd = 'cat {}/*.bnx > bnxmolecules && rm {}/*.bnx'.format(output_dir, output_dir)
+            os.system(cmd)
+            cmd = 'cat bnxheader bnxmolecules > {}/filtered_molecules.bnx'.format(output_dir)
+            os.system(cmd)
+            cmd = 'rm bnxheader bnxmolecules'
+            os.system(cmd)
+        else:
+            print('data/{}_output/all.bnx does not exist'.format(sample))
 
 
 def main():
     if not os.path.exists('results/{}_initial_genome_check'.format(sample)):
         os.makedirs('results/{}_initial_genome_check'.format(sample))
 
-    ## Files
-    merged_xmap = 'data/{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged.xmap'.format(sample)
-    output_fullcontigs_xmap = '{}/{}_fullContigs.xmap'.format(output_dir, sample)
-    merged_cmap = 'data/{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged_q.cmap'.format(sample)
-    output_fullcontigs_qcmap = '{}/{}_fullContigs_q.cmap'.format(output_dir, sample)
-
     fullcontigs_df = open_xmap_file(merged_xmap, complex_chr, complex_start, complex_end)
     ## We want to know which genomes have 2 (or more) full-length contigs. Save list of genomes. 
     ## Process rest of script if there are 2 full-length contigs. 
     if fullcontigs_df.shape[0] > 0: 
         if sample not in list_fullcontig_genomes:
-            list_fullcontig_genomes.append(sample)         
+            list_fullcontig_genomes.append(sample)   
+
+        output_fullcontigs_xmap = '{}/{}_fullContigs.xmap'.format(output_dir, sample)     
         output_file(fullcontigs_df, output_fullcontigs_xmap)
+
         contigs_list = fullcontigs_df['QryContigID'].unique().tolist()
         cmap_df = open_cmap_file(merged_cmap, contigs_list)
+
+        output_fullcontigs_qcmap = '{}/{}_fullContigs_q.cmap'.format(output_dir, sample)
         output_file(cmap_df, output_fullcontigs_qcmap)
+
         extract_molecules(contigs_list)
         print("{} full-length contigs for sample {}".format(fullcontigs_df.shape[0], sample))
     else: 
