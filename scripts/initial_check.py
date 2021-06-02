@@ -107,18 +107,19 @@ def open_xmap_file(xmap_file, chrom, start, end):
                 rows_loop.append(row)
     sub_df = pd.DataFrame(rows_loop)
     
-    ## Check if there is a gap between maps
+    ## Check if there is a gap between maps if sub_df is not empty
     ## Gap is currently set to 100kb
-    gap = 100000
-    grouped2 = sub_df.groupby("QryContigID")
-    rows_loop2 = []
-    for name, group in grouped:
-        group = group.assign(shifted_start=group.RefStartPos.shift(-1)).fillna(0)
-        group = group.assign(shifted_end=group.RefEndPos.shift(-1)).fillna(0)
-        for index, row in group.iterrows():
-            if row['shifted_start'] - row['RefEndPos'] <= gap:
-                rows_loop2.append(row)
-    contig_df = contig_df.append(pd.DataFrame(rows_loop))
+    if sub_df.shape[0] > 0:
+        gap = 100000
+        grouped2 = sub_df.groupby("QryContigID")
+        rows_loop2 = []
+        for name, group in grouped:
+            group = group.assign(shifted_start=group.RefStartPos.shift(-1)).fillna(0)
+            group = group.assign(shifted_end=group.RefEndPos.shift(-1)).fillna(0)
+            for index, row in group.iterrows():
+                if row['shifted_start'] - row['RefEndPos'] <= gap:
+                    rows_loop2.append(row)
+        contig_df = contig_df.append(pd.DataFrame(rows_loop))
 
     return contig_df
 
@@ -256,8 +257,8 @@ def main():
         os.makedirs('results/{}_initial_genome_check'.format(sample))
 
     fullcontigs_df = open_xmap_file(merged_xmap, complex_chr, complex_start, complex_end)
-    ## We want to know which genomes have 2 (or more) full-length contigs. Save list of genomes. 
-    ## Process rest of script if there are 2 full-length contigs. 
+    # We want to know which genomes have 2 (or more) full-length contigs. Save list of genomes. 
+    # Process rest of script if there are 2 full-length contigs. 
     if fullcontigs_df.shape[0] > 0: 
         if sample not in list_fullcontig_genomes:
             list_fullcontig_genomes.append(sample)   
