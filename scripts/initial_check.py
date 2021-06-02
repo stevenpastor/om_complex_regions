@@ -4,12 +4,14 @@ Get the molecules per CMAP and see if they support the 2 haplotypes.
 If they do, then the genome is done and does not need the pipeline.
 
 Notes:
-Run in main directory, not scripts directory. 
-Script assumes assemblies are unzipped and named data/sample_output.
-File paths may need to be changed depending on assembly version.
-Needs more testing if the correct molecules are being extracted.
-Assumes bnx file is in the output/ folder and is unzipped.
-Newer assemblies do not have bnx files so need to transfer into folder.
+- Run in main directory, not scripts directory. 
+- Script assumes assemblies are unzipped and named data/sample_output.
+- File paths may need to be changed depending on assembly version.
+- Needs more testing if the correct molecules are being extracted.
+- Uncomment lines in extract_molecules() to process on bnx files.
+    - Assumes bnx file is in the output/ folder and is unzipped.
+    - Newer assemblies do not have bnx files so need to transfer into folder.
+- extract_files.sh to extract from compressed assembly.
 
 Last updated: JW 6/2/2021
 """
@@ -49,7 +51,7 @@ output_dir = 'results/{}_initial_genome_check'.format(sample) ## Where the outpu
 merged_xmap = 'data/{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged.xmap'.format(sample)
 merged_cmap = 'data/{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged_q.cmap'.format(sample)
 merged_rmap = 'data/{}_output/contigs/exp_refineFinal1_sv/merged_smaps/exp_refineFinal1_merged_r.cmap'.format(sample)
-bnxfile = 'data/{}_output/all.bnx'.format(sample)
+bnxfile = 'data/{}_output/all.bnx.gz'.format(sample)
 if compression_type == "zip":
     molecule_dir = 'data/{}_output/contigs/exp_refineFinal1/alignmol/merge'.format(sample) ## Where the molecule xmap, qmap, rmap are (no BNX file in this assembly)
 else: 
@@ -96,28 +98,27 @@ def open_xmap_file(xmap_file, chrom, start, end):
     xmap_df = xmap_df.query("RefContigID == @chrom")
     contig_df = xmap_df.query("RefStartPos <= @start & RefEndPos >= @end or RefStartPos >= @end & RefEndPos <= @start") 
     ## Check if they are split mapped
-    if contig_df.shape[0] == 0:
-        rows_loop = []
-        grouped = xmap_df.groupby('QryContigID')
-        for name, group in grouped: 
-            for index, row in group.iterrows():
-                ## greater than start and less than end
-                if (row['RefStartPos'] >= start and row['RefStartPos'] <= end) or (row['RefEndPos'] >= start and row['RefEndPos'] <= end):
-                    rows_loop.append(row)
-        sub_df = pd.DataFrame(rows_loop)
-       
-        ## Check if there is a gap between maps
-        ## Gap is currently set to 100kb
-        gap = 100000
-        grouped2 = sub_df.groupby("QryContigID")
-        rows_loop2 = []
-        for name, group in grouped:
-            group = group.assign(shifted_start=group.RefStartPos.shift(-1)).fillna(0)
-            group = group.assign(shifted_end=group.RefEndPos.shift(-1)).fillna(0)
-            for index, row in group.iterrows():
-                if row['shifted_start'] - row['RefEndPos'] <= gap:
-                    rows_loop2.append(row)
-        contig_df = pd.DataFrame(rows_loop)
+    rows_loop = []
+    grouped = xmap_df.groupby('QryContigID')
+    for name, group in grouped: 
+        for index, row in group.iterrows():
+            ## greater than start and less than end
+            if (row['RefStartPos'] >= start and row['RefStartPos'] <= end) or (row['RefEndPos'] >= start and row['RefEndPos'] <= end):
+                rows_loop.append(row)
+    sub_df = pd.DataFrame(rows_loop)
+    
+    ## Check if there is a gap between maps
+    ## Gap is currently set to 100kb
+    gap = 100000
+    grouped2 = sub_df.groupby("QryContigID")
+    rows_loop2 = []
+    for name, group in grouped:
+        group = group.assign(shifted_start=group.RefStartPos.shift(-1)).fillna(0)
+        group = group.assign(shifted_end=group.RefEndPos.shift(-1)).fillna(0)
+        for index, row in group.iterrows():
+            if row['shifted_start'] - row['RefEndPos'] <= gap:
+                rows_loop2.append(row)
+    contig_df = contig_df.append(pd.DataFrame(rows_loop))
 
     return contig_df
 
@@ -184,14 +185,10 @@ def getRelevantContigCoordinates(contig):
 
     ## Looks at alignment string to see what matched the nick sites closest to the region and gives SiteID
     print("Looking at alignment string to see what matched the nick sites closest to the region and gives SiteID")
-    contigqstart = alignment_df.loc[str(refdictstart), 'querysite'] 
-    contigqend = alignment_df.loc[str(refdictend), 'querysite']
+    contigqstart = min(alignment_df.loc[str(refdictstart), 'querysite'])
+    contigqend = max(alignment_df.loc[str(refdictend), 'querysite'])
     contigStartPos = min([querydict[int(contigqstart)], querydict[int(contigqend)]]) # convert site ID to contig position
     contigEndPos = max([querydict[int(contigqstart)], querydict[int(contigqend)]])
-
-    with open('{}/contig{}_startEndPos.txt'.format(output_dir, contig), 'a') as filehandle:
-        filehandle.write('START=%s\n' % contigStartPos)
-        filehandle.write('END=%s\n' % contigEndPos)
 
     return contigStartPos, contigEndPos
 
@@ -202,6 +199,9 @@ def extract_molecules(contigs_list):
     for contig in contigs_list: 
         map_filename = 'exp_refineFinal1_contig{}'.format(contig)
         contigStartPos, contigEndPos = getRelevantContigCoordinates(contigs_list)
+        with open('{}/contig{}_startEndPos.txt'.format(output_dir, str(contig)), 'a') as filehandle:
+            filehandle.write('START=%s\n' % contigStartPos)
+            filehandle.write('END=%s\n' % contigEndPos)
         ## Copy over contig_rmap 
         rmap_file = '{}/{}_r.cmap'.format(molecule_dir, map_filename)
         cmd = 'cp {} {}'.format(rmap_file, output_dir)
@@ -233,22 +233,22 @@ def extract_molecules(contigs_list):
         cmd = 'cp {} {}'.format(rmap_file, output_dir)
         os.system(cmd)
 
-        ## Extract from BNX file instead
-        if  os.path.exists('data/{}_output/all.bnx'.format(sample)):
-            for molecule in molecules_list:
-                cmd = "grep $'^0\t{}\t' -A 7 {} > {}/{}_molecule.bnx".format(str(molecule), bnxfile, output_dir, str(molecule))
-                os.system(cmd)
+        """ Uncomment this section to extract from BNX file""" 
+        # if  os.path.exists(bnxfile):
+        #     for molecule in molecules_list:
+        #         cmd = "grep $'^0\t{}\t' -A 7 {} > {}/{}_molecule.bnx".format(str(molecule), bnxfile, output_dir, str(molecule))
+        #         os.system(cmd)
 
-            cmd = 'cat data/{}_output/all.bnx | grep "#" > bnxheader'.format(sample)
-            os.system(cmd)
-            cmd = 'cat {}/*.bnx > bnxmolecules && rm {}/*.bnx'.format(output_dir, output_dir)
-            os.system(cmd)
-            cmd = 'cat bnxheader bnxmolecules > {}/filtered_molecules.bnx'.format(output_dir)
-            os.system(cmd)
-            cmd = 'rm bnxheader bnxmolecules'
-            os.system(cmd)
-        else:
-            print('data/{}_output/all.bnx does not exist'.format(sample))
+        #     cmd = 'gunzip -c data/{}_output/all.bnx.gz | grep "#" > bnxheader'.format(sample)
+        #     os.system(cmd)
+        #     cmd = 'cat {}/*.bnx > bnxmolecules && rm {}/*.bnx'.format(output_dir, output_dir)
+        #     os.system(cmd)
+        #     cmd = 'cat bnxheader bnxmolecules > {}/filtered_molecules.bnx'.format(output_dir)
+        #     os.system(cmd)
+        #     cmd = 'rm bnxheader bnxmolecules'
+        #     os.system(cmd)
+        # else:
+        #     print('data/{}_output/all.bnx.gz does not exist'.format(sample))
 
 
 def main():
@@ -272,7 +272,7 @@ def main():
         output_file(cmap_df, output_fullcontigs_qcmap)
 
         extract_molecules(contigs_list)
-        print("{} full-length contigs for sample {}".format(fullcontigs_df.shape[0], sample))
+        print("{} full-length contigs for sample {}".format(len(contigs_list), sample))
     else: 
         print("No full-length contigs for sample {}".format(sample))
 

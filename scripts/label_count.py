@@ -57,7 +57,7 @@ def closest(lst, K):
 
 
 def count_labels(contig, mol_xmap, mol_qmap, mol_rmap, start, end):
-    print("Getting relevant molecule coordinates to contig coordinates")
+    print("Getting relevant molecule coordinates to contig coordinates for contig{}".format(contig))
     header = get_header_line(mol_xmap)
     mol_xmap_df = pd.read_csv(mol_xmap, sep='\t', comment='#', names=header, index_col=None)
 
@@ -121,7 +121,7 @@ def count_labels(contig, mol_xmap, mol_qmap, mol_rmap, start, end):
     count_df = pd.DataFrame(count_list, columns=['Molecule_ID', '5prime_Labels', '3prime_Labels'])
     count_df.to_csv("{}/contig{}_moleculeLabelCounts.txt".format(results_dir, contig), sep='\t', index=None)
 
-    cmd = 'rm {}/contig[{}]_startEndPos.txt'.format(results_dir, contig)
+    cmd = 'rm {}/contig{}_startEndPos.txt'.format(results_dir, contig)
     os.system(cmd)
 
 
@@ -135,7 +135,7 @@ def main():
         mol_xmap_file = '{}/{}_fullContig{}_molecules.xmap'.format(results_dir, sample, contig)
         mol_qmap_file = '{}/{}_fullContig{}_molecules_q.cmap'.format(results_dir, sample, contig)
         mol_rmap_file = '{}/exp_refineFinal1_contig{}_r.cmap'.format(results_dir, contig)
-        with open("{}/contig[{}]_startEndPos.txt".format(results_dir, contig), 'r') as c:
+        with open("{}/contig{}_startEndPos.txt".format(results_dir, contig), 'r') as c:
             reader = csv.reader(c)
             for line in reader:
                 if len(line) > 0:
