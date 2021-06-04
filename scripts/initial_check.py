@@ -13,7 +13,7 @@ Notes:
     - Newer assemblies do not have bnx files so need to transfer into folder.
 - extract_files.sh to extract from compressed assembly.
 
-Last updated: JW 6/2/2021
+Last updated: JW 6/4/2021
 """
 import pandas as pd
 import csv
@@ -142,8 +142,8 @@ def closest(lst, K):
 def getRelevantContigCoordinates(contig):
     print("Getting relevant contig coordinates to molecule coordinates")
     merged_xmap_file = '{}/{}_fullContigs.xmap'.format(output_dir, sample)
-    header = get_header_line(merged_xmap_file)
-    merged_xmap_df = pd.read_csv(merged_xmap_file, sep='\t', comment='#', names=header, index_col=None)
+    xmap_header = get_header_line(merged_xmap_file)
+    merged_xmap_df = pd.read_csv(merged_xmap_file, sep='\t', comment='#', names=xmap_header, index_col=None)
 
     merged_qmap_file = '{}/{}_fullContigs_q.cmap'.format(output_dir, sample)
     header = get_header_line(merged_qmap_file)
@@ -154,40 +154,65 @@ def getRelevantContigCoordinates(contig):
 
     ## Get relevant positions on contig
     print("Getting relevant positions on contig")
-    if merged_xmap_df.shape[0] == 1:
-        alignment = merged_xmap_df.loc[0, 'Alignment']
-    else: 
-        alignment = ''.join(merged_xmap_df['Alignment'])
-    sub_qmap =  merged_qmap_df.query("CMapId == @contig")
-    querydict = pd.Series(sub_qmap.Position.values, index=sub_qmap.SiteID).to_dict()
-    chrom_ref = merged_rmap_df.query("CMapId == @complex_chr")
-    refdict = pd.Series(chrom_ref.SiteID.values, index=chrom_ref.Position).to_dict()
-    keylist = list(refdict.keys())
+    temp_df = merged_xmap_df.query("QryContigID == @contig")
+    rows_list = []
+    for index, row in temp_df.iterrows():
+        if row['RefStartPos'] < complex_start:
+            rows_list.append(row)
+        elif row['RefEndPos'] > complex_end:
+            rows_list.append(row)
+    contig_df = pd.DataFrame(rows_list, columns=xmap_header)
 
-    ## Finds the nicking sites on the contig closest to region start and end
-    print("Finding the nicking sites on the contig closest to region start and end")
-    refstart_nicksite = closest(keylist, complex_start)
-    refend_nicksite = closest(keylist, complex_end) 
-    alignmentlist = re.split('\(|\)', alignment)
-    alignmentlist = list(filter(None, alignmentlist))
-    alignment_df = pd.DataFrame(alignmentlist)
-    alignment_df[['refsite', 'querysite']] = alignment_df[0].str.split(',', expand=True)
-    alignment_df.drop(columns=0, inplace=True)
-    alignment_df = alignment_df.set_index('refsite', drop=False)
-    reflist = alignment_df.index.values.tolist()
-    refdictstart = refdict[refstart_nicksite]
-    refdictend = refdict[refend_nicksite]
-    print("Checkpoint 1")
-    while str(refdictstart) not in reflist:
-        refdictstart = refdictstart - 1
-    print("Checkpoint 2")
-    while str(refdictend) not in reflist:
-        refdictend = refdictend + 1
+    for index, row in contig_df.iterrows():
+        if row['RefStartPos'] < complex_start:
+            alignment = row['Alignment']
+            sub_qmap =  merged_qmap_df.query("CMapId == @contig")
+            querydict = pd.Series(sub_qmap.Position.values, index=sub_qmap.SiteID).to_dict()
+            chrom_ref = merged_rmap_df.query("CMapId == @complex_chr")
+            refdict = pd.Series(chrom_ref.SiteID.values, index=chrom_ref.Position).to_dict()
+            keylist = list(refdict.keys())
 
-    ## Looks at alignment string to see what matched the nick sites closest to the region and gives SiteID
-    print("Looking at alignment string to see what matched the nick sites closest to the region and gives SiteID")
-    contigqstart = min(alignment_df.loc[str(refdictstart), 'querysite'])
-    contigqend = max(alignment_df.loc[str(refdictend), 'querysite'])
+            ## Finds the nicking sites on the contig closest to region start and end
+            refstart_nicksite = closest(keylist, complex_start)
+            refend_nicksite = closest(keylist, complex_end) 
+            alignmentlist = re.split('\(|\)', alignment)
+            alignmentlist = list(filter(None, alignmentlist))
+            alignment_df = pd.DataFrame(alignmentlist)
+            alignment_df[['refsite', 'querysite']] = alignment_df[0].str.split(',', expand=True)
+            alignment_df.drop(columns=0, inplace=True)
+            alignment_df = alignment_df.set_index('refsite', drop=False)
+            reflist = alignment_df.index.values.tolist()
+            refdictstart = refdict[refstart_nicksite]
+            while str(refdictstart) not in reflist:
+                refdictstart = refdictstart - 1
+                
+            contigqstart = alignment_df.loc[str(refdictstart), 'querysite']
+
+        if row['RefEndPos'] > complex_end:
+            alignment = row['Alignment']
+            sub_qmap =  merged_qmap_df.query("CMapId == @contig")
+            querydict = pd.Series(sub_qmap.Position.values, index=sub_qmap.SiteID).to_dict()
+            chrom_ref = merged_rmap_df.query("CMapId == @complex_chr")
+            refdict = pd.Series(chrom_ref.SiteID.values, index=chrom_ref.Position).to_dict()
+            keylist = list(refdict.keys())
+
+            ## Finds the nicking sites on the contig closest to region start and end
+            refstart_nicksite = closest(keylist, complex_start)
+            refend_nicksite = closest(keylist, complex_end) 
+            alignmentlist = re.split('\(|\)', alignment)
+            alignmentlist = list(filter(None, alignmentlist))
+            alignment_df = pd.DataFrame(alignmentlist)
+            alignment_df[['refsite', 'querysite']] = alignment_df[0].str.split(',', expand=True)
+            alignment_df.drop(columns=0, inplace=True)
+            alignment_df = alignment_df.set_index('refsite', drop=False)
+            reflist = alignment_df.index.values.tolist()
+            refdictend = refdict[refend_nicksite]
+            while str(refdictend) not in reflist:
+                refdictend = refdictend + 1
+
+            ## Looks at alignment string to see what matched the nick sites closest to the region and gives SiteID
+            contigqend = (alignment_df.loc[str(refdictend), 'querysite'])
+
     contigStartPos = min([querydict[int(contigqstart)], querydict[int(contigqend)]]) # convert site ID to contig position
     contigEndPos = max([querydict[int(contigqstart)], querydict[int(contigqend)]])
 
@@ -199,7 +224,7 @@ def getRelevantContigCoordinates(contig):
 def extract_molecules(contigs_list):
     for contig in contigs_list: 
         map_filename = 'exp_refineFinal1_contig{}'.format(contig)
-        contigStartPos, contigEndPos = getRelevantContigCoordinates(contigs_list)
+        contigStartPos, contigEndPos = getRelevantContigCoordinates(contig)
         with open('{}/contig{}_startEndPos.txt'.format(output_dir, str(contig)), 'a') as filehandle:
             filehandle.write('START=%s\n' % contigStartPos)
             filehandle.write('END=%s\n' % contigEndPos)

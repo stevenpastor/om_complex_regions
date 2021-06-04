@@ -1,6 +1,6 @@
 # base sample name and its corresponding BNX:
-SAMPLE=12549A
-BNX=data/12549A_all.bnx
+SAMPLE=BC00701_100517_DLE1
+BNX=data/BC00701_100517_DLE1_all.bnx
 
 # assembly compression type
 # tar or zip
