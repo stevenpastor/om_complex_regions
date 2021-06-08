@@ -22,6 +22,12 @@ python scripts/initial_check.py
 (run on full-spanning contigs from initial_check.py)
 python scripts/label_count.py
 
+# requires output from above 2 scripts:
+sh scripts/subset_contig.sh
+sh group_subset_contigs_omtools.sh
+
+
+(for those regions/genomes which lack contiguously assembled cmaps)
 sh scripts/complex_region_alignment.sh
 
 sh scripts/separate_alignment.sh
