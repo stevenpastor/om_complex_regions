@@ -220,6 +220,14 @@ def getRelevantContigCoordinates(contig):
     contigStartPos = min([querydict[int(contigqstart)], querydict[int(contigqend)]]) # convert site ID to contig position
     contigEndPos = max([querydict[int(contigqstart)], querydict[int(contigqend)]])
 
+    with open('{}/contig{}_startEndPos.txt'.format(output_dir, str(contig)), 'a') as filehandle:
+            filehandle.write('REF_POS_START=%s\n' % refdictstart)
+            filehandle.write('REF_POS_START=%s\n' % refdictend)
+            filehandle.write('CONTIG_BP_START=%s\n' % contigStartPos)
+            filehandle.write('CONTIG_BP_END=%s\n' % contigEndPos)
+            filehandle.write('CONTIG_POS_START=%s\n' % contigqstart)
+            filehandle.write('CONTIG_POS_END=%s\n' % contigqend)
+
     return contigStartPos, contigEndPos
 
 
@@ -229,9 +237,6 @@ def extract_molecules(contigs_list):
     for contig in contigs_list: 
         map_filename = 'exp_refineFinal1_contig{}'.format(contig)
         contigStartPos, contigEndPos = getRelevantContigCoordinates(contig)
-        with open('{}/contig{}_startEndPos.txt'.format(output_dir, str(contig)), 'a') as filehandle:
-            filehandle.write('START=%s\n' % contigStartPos)
-            filehandle.write('END=%s\n' % contigEndPos)
         ## Copy over contig_rmap 
         rmap_file = '{}/{}_r.cmap'.format(molecule_dir, map_filename)
         cmd = 'cp {} {}'.format(rmap_file, output_dir)
