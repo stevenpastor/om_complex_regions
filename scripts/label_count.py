@@ -79,60 +79,60 @@ def contig_xmap(contigs_list):
     return (xmap_prime_df)
 
 
-def count_labels(contig, mol_xmap, mol_qmap, mol_rmap, start, end, contig_orientation):
+def count_labels(contig, mol_xmap, mol_qmap, mol_rmap, contig_start, contig_end, contig_orientation):
     print("Getting relevant molecule coordinates to contig coordinates for contig{}".format(contig))
     header = get_header_line(mol_xmap)
     mol_xmap_df = pd.read_csv(mol_xmap, sep='\t', comment='#', names=header, index_col=None)
-
-    header = get_header_line(mol_qmap)
-    mol_qmap_df = pd.read_csv(mol_qmap, sep='\t', comment='#', names=header, index_col=None)
-
-    header = get_header_line(mol_rmap)
-    merged_rmap_df = pd.read_csv(mol_rmap, sep='\t', comment='#', names=header, index_col=None)
 
     count_list = []
     for index, row in mol_xmap_df.iterrows():
         molecule_ID = row['QryContigID']
         orientation = row['Orientation']
         alignment = row['Alignment']
-        sub_qmap =  mol_qmap_df.query("CMapId == @molecule_ID")
-        querydict = pd.Series(sub_qmap.Position.values, index=sub_qmap.SiteID).to_dict()
-        chrom_ref = merged_rmap_df.query("CMapId == @contig")
-        refdict = pd.Series(chrom_ref.SiteID.values, index=chrom_ref.Position).to_dict()
-        keylist = list(refdict.keys())
 
-        ## Finds the nicking sites on the contig closest to region start and end
-        refstart_nicksite = closest(keylist, start)
-        refend_nicksite = closest(keylist, end) 
         alignmentlist = re.split('\(|\)', alignment)
         alignmentlist = list(filter(None, alignmentlist))
         alignment_df = pd.DataFrame(alignmentlist)
         alignment_df[['refsite', 'querysite']] = alignment_df[0].str.split(',', expand=True)
         alignment_df.drop(columns=0, inplace=True)
         alignment_df = alignment_df.set_index('refsite', drop=False)
-        refdictstart = refdict[refstart_nicksite]
-        refdictend = refdict[refend_nicksite]
 
         ## Looks at alignment string to see what matched the nick sites closest to the region and gives SiteID
         refsite_list = alignment_df['refsite'].to_list()
-        if str(refdictstart) in refsite_list:
-            molqstart = int(alignment_df.loc[str(refdictstart), 'querysite'])
-        else:
-            refdictstart = refdictstart + 1
-            if str(refdictstart) in refsite_list:
-                molqstart = int(alignment_df.loc[str(refdictstart), 'querysite'])
-            else:
+        contig_start_range = [contig_start]
+        contig_end_range = [contig_end]
+
+        if contig_start < contig_end:
+            for i in range(1, 5):
+                contig_start_range.append(contig_start + i)
+        elif contig_start > contig_end:
+            for i in range(1, 5):
+                contig_start_range.append(contig_start - i)
+        
+        for pos in contig_start_range: 
+            if str(pos) in refsite_list:
+                molqstart = int(alignment_df.loc[str(pos), 'querysite'])
+                break
+            else: 
                 molqstart = 0
 
-        if str(refdictend) in refsite_list:
-            molqend = int(alignment_df.loc[str(refdictend), 'querysite'])
-        else:
-            refdictend = refdictend - 1
-            if str(refdictend) in refsite_list:
-                molqstart = int(alignment_df.loc[str(refdictend), 'querysite'])
-            else:
-                molqend = 0
+        if contig_start > contig_end:
+            for i in range(1, 5):
+                contig_end_range.append(contig_end - i)
+        elif contig_start > contig_end:
+            for i in range(1, 5):
+                contig_end_range.append(contig_end + i)
         
+        for pos in contig_end_range: 
+            if str(pos) in refsite_list:
+                molqend = int(alignment_df.loc[str(pos), 'querysite'])
+                break
+            else: 
+                molqend = 0
+
+        # print(molecule_ID)
+        # print(molqstart, molqend) 
+
         site_list = alignment_df['querysite'].to_list()
         fiveprime_count = 0
         threeprime_count = 0
@@ -156,18 +156,15 @@ def count_labels(contig, mol_xmap, mol_qmap, mol_rmap, start, end, contig_orient
                     fiveprime_count += 1
         elif contig_orientation == '-' and orientation == '+':
             for site in site_list:
-                if int(site) < molqstart:
+                if int(site) < molqend and molqstart !=0 :
                     threeprime_count += 1
-                elif int(site) > molqend and molqend != 0:
+                elif int(site) > molqstart and molqstart != 0:
                     fiveprime_count += 1
 
-        count_list.append([molecule_ID, fiveprime_count, threeprime_count, orientation, contig_orientation])
+        count_list.append([molecule_ID, fiveprime_count, threeprime_count, contig_orientation, orientation])
 
-    count_df = pd.DataFrame(count_list, columns=['Molecule_ID', '5prime_Labels', '3prime_Labels', 'mol_orientation', 'contig_orientation'])
+    count_df = pd.DataFrame(count_list, columns=['Molecule_ID', '5prime_Labels', '3prime_Labels', 'contig_orientation', 'mol_orientation'])
     count_df.to_csv("{}/contig{}_moleculeLabelCounts.txt".format(results_dir, contig), sep='\t', index=None)
-
-    # cmd = 'rm {}/contig{}_startEndPos.txt'.format(results_dir, contig)
-    # os.system(cmd)
 
 
 def main():
@@ -185,18 +182,18 @@ def main():
             reader = csv.reader(c)
             for line in reader:
                 if len(line) > 0:
-                    if "START" in line[0]:
-                        start = int(float((' '.join([str(char) for char in line])).split('=')[1]))
-                    elif "END" in line[0]:
-                        end = int(float((' '.join([str(char) for char in line])).split('=')[1]))
-
+                    if "CONTIG_POS_START" in line[0]:
+                        contig_start = int(re.sub('[CONTIG_POS_START=]', '', line[0]))
+                    elif "CONTIG_POS_END" in line[0]:
+                        contig_end = int(re.sub('[CONTIG_POS_END=]', '', line[0]))
+        
         for index, row in xmap_prime_df.iterrows():
             if row['QryContigID'] == contig and row['RefStartPos'] < complex_start:
                 contig_orientation = row['Orientation']
             if row['QryContigID'] == contig and row['RefEndPos'] > complex_end:
                 contig_orientation = row['Orientation']
 
-        count_labels(contig, mol_xmap_file, mol_qmap_file, mol_rmap_file, start, end, contig_orientation)
+        count_labels(contig, mol_xmap_file, mol_qmap_file, mol_rmap_file, contig_start, contig_end, contig_orientation)
 
 
 if __name__ == '__main__':
