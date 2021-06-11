@@ -118,11 +118,20 @@ def count_labels(contig, mol_xmap, mol_qmap, mol_rmap, start, end, contig_orient
         if str(refdictstart) in refsite_list:
             molqstart = int(alignment_df.loc[str(refdictstart), 'querysite'])
         else:
-            molqstart = 0
+            refdictstart = refdictstart + 1
+            if str(refdictstart) in refsite_list:
+                molqstart = int(alignment_df.loc[str(refdictstart), 'querysite'])
+            else:
+                molqstart = 0
+
         if str(refdictend) in refsite_list:
             molqend = int(alignment_df.loc[str(refdictend), 'querysite'])
         else:
-            molqend = 0
+            refdictend = refdictend - 1
+            if str(refdictend) in refsite_list:
+                molqstart = int(alignment_df.loc[str(refdictend), 'querysite'])
+            else:
+                molqend = 0
         
         site_list = alignment_df['querysite'].to_list()
         fiveprime_count = 0
@@ -131,17 +140,17 @@ def count_labels(contig, mol_xmap, mol_qmap, mol_rmap, start, end, contig_orient
             for site in site_list:
                 if int(site) < molqstart:
                     fiveprime_count += 1
-                elif int(site) > molqend:
+                elif int(site) > molqend and molqend != 0:
                     threeprime_count += 1
         elif contig_orientation == '-' and orientation == '-':
             for site in site_list:
-                if int(site) > molqstart:
+                if int(site) > molqstart and molqstart != 0:
                     fiveprime_count += 1
                 elif int(site) < molqend:
                     threeprime_count += 1
         elif contig_orientation == '+' and orientation == '-':
             for site in site_list:
-                if int(site) > molqstart:
+                if int(site) > molqstart and molqstart != 0:
                     threeprime_count += 1
                 elif int(site) < molqend:
                     fiveprime_count += 1
@@ -149,7 +158,7 @@ def count_labels(contig, mol_xmap, mol_qmap, mol_rmap, start, end, contig_orient
             for site in site_list:
                 if int(site) < molqstart:
                     threeprime_count += 1
-                elif int(site) > molqend:
+                elif int(site) > molqend and molqend != 0:
                     fiveprime_count += 1
 
         count_list.append([molecule_ID, fiveprime_count, threeprime_count, orientation, contig_orientation])
