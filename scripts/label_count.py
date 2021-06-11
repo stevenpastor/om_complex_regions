@@ -102,64 +102,38 @@ def count_labels(contig, mol_xmap, mol_qmap, mol_rmap, contig_start, contig_end,
         contig_start_range = [contig_start]
         contig_end_range = [contig_end]
 
-        if contig_start < contig_end:
-            for i in range(1, 5):
-                contig_start_range.append(contig_start + i)
-        elif contig_start > contig_end:
-            for i in range(1, 5):
-                contig_start_range.append(contig_start - i)
+        for i in range(1, 5):
+            contig_start_range.append(contig_start + i)
+            contig_end_range.append(contig_end - i)
         
         for pos in contig_start_range: 
             if str(pos) in refsite_list:
-                molqstart = int(alignment_df.loc[str(pos), 'querysite'])
+                molqstart = pos
                 break
             else: 
                 molqstart = 0
-
-        if contig_start > contig_end:
-            for i in range(1, 5):
-                contig_end_range.append(contig_end - i)
-        elif contig_start > contig_end:
-            for i in range(1, 5):
-                contig_end_range.append(contig_end + i)
-        
         for pos in contig_end_range: 
             if str(pos) in refsite_list:
-                molqend = int(alignment_df.loc[str(pos), 'querysite'])
+                molqend = pos
                 break
             else: 
                 molqend = 0
 
-        # print(molecule_ID)
-        # print(molqstart, molqend) 
-
-        site_list = alignment_df['querysite'].to_list()
         fiveprime_count = 0
         threeprime_count = 0
-        if contig_orientation == '+' and orientation == '+':
-            for site in site_list:
+        if contig_orientation == '+':
+            for site in refsite_list:
                 if int(site) < molqstart:
                     fiveprime_count += 1
                 elif int(site) > molqend and molqend != 0:
                     threeprime_count += 1
-        elif contig_orientation == '-' and orientation == '-':
-            for site in site_list:
-                if int(site) > molqstart and molqstart != 0:
-                    fiveprime_count += 1
-                elif int(site) < molqend:
+        elif contig_orientation == '-':
+            for site in refsite_list:
+                if int(site) < molqstart:
                     threeprime_count += 1
-        elif contig_orientation == '+' and orientation == '-':
-            for site in site_list:
-                if int(site) > molqstart and molqstart != 0:
-                    threeprime_count += 1
-                elif int(site) < molqend:
+                if int(site) > molqend and molqend != 0:
                     fiveprime_count += 1
-        elif contig_orientation == '-' and orientation == '+':
-            for site in site_list:
-                if int(site) < molqend and molqstart !=0 :
-                    threeprime_count += 1
-                elif int(site) > molqstart and molqstart != 0:
-                    fiveprime_count += 1
+
 
         count_list.append([molecule_ID, fiveprime_count, threeprime_count, contig_orientation, orientation])
 
@@ -186,6 +160,10 @@ def main():
                         contig_start = int(re.sub('[CONTIG_POS_START=]', '', line[0]))
                     elif "CONTIG_POS_END" in line[0]:
                         contig_end = int(re.sub('[CONTIG_POS_END=]', '', line[0]))
+        if contig_start > contig_end:
+            temp_start = contig_start
+            contig_start = contig_end
+            contig_end = temp_start
         
         for index, row in xmap_prime_df.iterrows():
             if row['QryContigID'] == contig and row['RefStartPos'] < complex_start:
