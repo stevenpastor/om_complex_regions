@@ -13,6 +13,10 @@ Notes:
     - Newer assemblies do not have bnx files so need to transfer into folder.
 - extract_files.sh to extract from compressed assembly.
 
+python == 3.6.2 
+pandas == 0.25.3 
+numpy == 1.13.3
+
 Last updated: JW 6/4/2021
 """
 import pandas as pd
