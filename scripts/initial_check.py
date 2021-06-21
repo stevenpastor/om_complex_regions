@@ -101,7 +101,7 @@ def open_xmap_file(xmap_file, chrom, start, end):
     xmap_df = pd.read_csv(xmap_file, sep='\t', comment='#', names=header, index_col=None)
     xmap_df = xmap_df.query("RefContigID == @chrom")
     contig_df = xmap_df.query("RefStartPos <= @start & RefEndPos >= @end or RefStartPos >= @end & RefEndPos <= @start") 
-    ## Check if they are split mapped
+    # Check if they are split mapped
     rows_loop = []
     grouped = xmap_df.groupby('QryContigID')
     for name, group in grouped: 
@@ -110,10 +110,13 @@ def open_xmap_file(xmap_file, chrom, start, end):
             if (row['RefStartPos'] >= start and row['RefStartPos'] <= end) or (row['RefEndPos'] >= start and row['RefEndPos'] <= end):
                 rows_loop.append(row)
     sub_df = pd.DataFrame(rows_loop)
-    
+
+    refstart_list = sub_df['RefStartPos'].tolist()
+    refend_list = sub_df['RefEndPos'].tolist()
+    refpos_list = refstart_list + refend_list
+    if any(pos < complex_start and pos > complex_end for pos in refpos_list):
     ## Check if there is a gap between maps if sub_df is not empty
     ## Gap is currently set to 100kb
-    if sub_df.shape[0] > 0:
         gap = 100000
         grouped2 = sub_df.groupby("QryContigID")
         rows_loop2 = []
@@ -222,7 +225,7 @@ def getRelevantContigCoordinates(contig):
 
     with open('{}/contig{}_startEndPos.txt'.format(output_dir, str(contig)), 'a') as filehandle:
             filehandle.write('REF_POS_START=%s\n' % refdictstart)
-            filehandle.write('REF_POS_START=%s\n' % refdictend)
+            filehandle.write('REF_POS_END=%s\n' % refdictend)
             filehandle.write('CONTIG_BP_START=%s\n' % contigStartPos)
             filehandle.write('CONTIG_BP_END=%s\n' % contigEndPos)
             filehandle.write('CONTIG_POS_START=%s\n' % contigqstart)
