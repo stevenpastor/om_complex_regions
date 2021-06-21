@@ -314,8 +314,10 @@ def main():
         print("{} full-length contigs for sample {}".format(len(contigs_list), sample))
     else: 
         print("No full-length contigs for sample {}".format(sample))
+        with open('{}/{}_results.txt'.format(output_dir, sample), 'a') as filehandle:
+            filehandle.write('No full-length contigs for sample %s' % sample)
 
-    with open('results/genomes_completeContigs_list.txt'.format(sample), 'a') as filehandle:
+    with open('results/genomes_completeContigs_list.txt', 'a') as filehandle:
         for genomes in list_fullcontig_genomes:
             filehandle.write('%s\n' % genomes)
 
