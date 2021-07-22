@@ -30,7 +30,7 @@ sh group_subset_contigs_omtools.sh
 (for those regions/genomes which lack contiguously assembled cmaps)
 sh scripts/complex_region_alignment.sh
 
-sh scripts/separate_alignment.sh
+sh scripts/separate_alignments.sh
 
 sh scripts/fix_nested.sh
 
