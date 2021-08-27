@@ -13,6 +13,12 @@ Notes:
     - Newer assemblies do not have bnx files so need to transfer into folder.
 - extract_files.sh to extract from compressed assembly.
 
+To build Dockerfile:
+docker build -t python_v3.6 .
+
+To run (because older versions of modules): 
+docker run --rm --mount type=bind,source="$(pwd)"/data,target=/data --mount type=bind,source="$(pwd)"/scripts,target=/scripts --mount type=bind,source="$(pwd)"/config_files,target=/config_files -it python_v3.6 python scripts/initial_check.py data/
+
 python == 3.6.2 
 pandas == 0.25.3 
 numpy == 1.13.3
@@ -24,9 +30,11 @@ import csv
 import re
 import os
 import numpy as np
+import sys
+
 
 ## Get sample/chr/start/end from config file:
-with open("config", 'r') as c:
+with open("config_files/config", 'r') as c:
     reader = csv.reader(c)
     for line in reader:
         if len(line) > 0:
