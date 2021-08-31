@@ -13,9 +13,6 @@ Notes:
     - Newer assemblies do not have bnx files so need to transfer into folder.
 - extract_files.sh to extract from compressed assembly.
 
-To build Dockerfile:
-docker build -t python_v3.6 .
-
 To run (because older versions of modules): 
 docker run --rm --mount type=bind,source="$(pwd)"/data,target=/data --mount type=bind,source="$(pwd)"/scripts,target=/scripts --mount type=bind,source="$(pwd)"/config_files,target=/config_files -it python_v3.6 python scripts/initial_check.py data/
 
@@ -108,37 +105,29 @@ def open_xmap_file(xmap_file, chrom, start, end):
     header = get_header_line(xmap_file)
     xmap_df = pd.read_csv(xmap_file, sep='\t', comment='#', names=header, index_col=None)
     xmap_df = xmap_df.query("RefContigID == @chrom")
-    contig_df = xmap_df.query("RefStartPos <= @start & RefEndPos >= @end or RefStartPos >= @end & RefEndPos <= @start") 
-    # Check if they are split mapped
-    rows_loop = []
-    grouped = xmap_df.groupby('QryContigID')
-    for name, group in grouped: 
-        for index, row in group.iterrows():
-            ## greater than start and less than end
-            if (row['RefStartPos'] >= start and row['RefStartPos'] <= end) or (row['RefEndPos'] >= start and row['RefEndPos'] <= end):
-                rows_loop.append(row)
-    sub_df = pd.DataFrame(rows_loop)
+    padded_start = start - 100000
+    padded_end = end + 100000
+    contig_df = xmap_df.query("RefStartPos <= @start & RefEndPos >= @end")
 
+    # Check if they are split mapped
+    sub_df = xmap_df.query("RefStartPos >= @padded_start & RefStartPos <= @padded_end or RefEndPos >= @padded_start & RefEndPos <= @padded_end")
     if sub_df.shape[0] > 0:
-        refstart_list = sub_df['RefStartPos'].tolist()
-        refend_list = sub_df['RefEndPos'].tolist()
-        refpos_list = refstart_list + refend_list
-        if any(pos < complex_start and pos > complex_end for pos in refpos_list):
         ## Check if there is a gap between maps if sub_df is not empty
         ## Gap is currently set to 100kb
-            gap = 100000
-            grouped2 = sub_df.groupby("QryContigID")
-            rows_loop2 = []
-            for name, group in grouped:
-                group = group.assign(shifted_start=group.RefStartPos.shift(-1)).fillna(0)
-                group = group.assign(shifted_end=group.RefEndPos.shift(-1)).fillna(0)
-                for index, row in group.iterrows():
-                    if row['shifted_start'] - row['RefEndPos'] <= gap:
-                        rows_loop2.append(row)
-            contig_df = contig_df.append(pd.DataFrame(rows_loop))
-
+        gap = 100000
+        grouped = sub_df.groupby("QryContigID")
+        rows_loop = []
+        for name, group in grouped:
+            group = group.assign(shifted_start=group.RefStartPos.shift(-1)).fillna(0)
+            group = group.assign(shifted_end=group.RefEndPos.shift(-1)).fillna(0)
+            for index, row in group.iterrows():
+                if row['shifted_start'] - row['RefEndPos'] <= gap:
+                    rows_loop.append(row)
+        temp_df = pd.DataFrame(rows_loop)
+        contig_df = contig_df.append(pd.DataFrame(temp_df.iloc[:,:-2]))
+    
     return contig_df
-
+    
 
 ## Get contigs from cmap file
 def open_cmap_file(cmap_file, IDsToExtract):

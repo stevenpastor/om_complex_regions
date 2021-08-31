@@ -1,6 +1,6 @@
 # base sample name and its corresponding BNX:
-SAMPLE=BC00701_100517_DLE1
-BNX=data/BC00701_100517_DLE1_all.bnx
+SAMPLE=11029A
+BNX=data/11029A_output/all.bnx.gz
 
 # assembly compression type
 # tar or zip
@@ -20,8 +20,8 @@ COMPLEX_CHR=X
 
 # start/end of complexity only
 # do not include any anchor padding
-COMPLEX_START=103926190
-COMPLEX_END=104121726
+COMPLEX_START=103888556
+COMPLEX_END=104144470
 
 # 5' and 3' padding outside the start and end
 # 400kb is a good start
@@ -31,7 +31,7 @@ THREE_PADDING=400000
 # number of labels going into complex region (no good answer here-this is domain knowledge)
 # know that ~15-17 labels per 100kb, so keep that in mind:
 # originally chose 16 but this is aggressive
-COMPLEX_LABELS=8
+COMPLEX_LABELS=16
 
 # number of anchor labels desire a molecule to have mapped to reference
 # >= than this number - for the self_alignments
