@@ -114,18 +114,23 @@ def open_xmap_file(xmap_file, chrom, start, end):
     if sub_df.shape[0] > 0:
         ## Check if there is a gap between maps if sub_df is not empty
         ## Gap is currently set to 100kb
-        gap = 100000
+        gap = 160000
         grouped = sub_df.groupby("QryContigID")
         rows_loop = []
         for name, group in grouped:
-            group = group.assign(shifted_start=group.RefStartPos.shift(-1)).fillna(0)
-            group = group.assign(shifted_end=group.RefEndPos.shift(-1)).fillna(0)
-            for index, row in group.iterrows():
-                if row['shifted_start'] - row['RefEndPos'] <= gap:
-                    rows_loop.append(row)
+            group_list = []
+            group_list.extend(group['RefStartPos'].tolist())
+            group_list.extend(group['RefEndPos'].tolist())
+            if min(group_list) < start and max(group_list) > end: 
+                group = group.assign(shifted_start=group.RefStartPos.shift(-1)).fillna(0)
+                group = group.assign(shifted_end=group.RefEndPos.shift(-1)).fillna(0)
+                for index, row in group.iterrows():
+                    if row['shifted_start'] - row['RefEndPos'] <= gap:
+                        rows_loop.append(row)
         temp_df = pd.DataFrame(rows_loop)
         contig_df = contig_df.append(pd.DataFrame(temp_df.iloc[:,:-2]))
-    
+        contig_df = contig_df.drop_duplicates()
+
     return contig_df
     
 
@@ -145,6 +150,7 @@ def closest(lst, K):
 
 ## Get coordinates of molecules relative to the contig
 def getRelevantContigCoordinates(contig):
+    print("Processing contig {}".format(contig))
     print("Getting relevant contig coordinates to molecule coordinates")
     merged_xmap_file = '{}/{}_fullContigs.xmap'.format(output_dir, sample)
     xmap_header = get_header_line(merged_xmap_file)
@@ -158,7 +164,7 @@ def getRelevantContigCoordinates(contig):
     merged_rmap_df = pd.read_csv(merged_rmap, sep='\t', comment='#', names=header, index_col=None)
 
     ## Get relevant positions on contig
-    print("Getting relevant positions on contig")
+    print("Getting relevant positions")
     temp_df = merged_xmap_df.query("QryContigID == @contig")
     rows_list = []
     for index, row in temp_df.iterrows():
@@ -179,6 +185,7 @@ def getRelevantContigCoordinates(contig):
 
             ## Finds the nicking sites on the contig closest to region start and end
             refstart_nicksite = closest(keylist, complex_start)
+
             refend_nicksite = closest(keylist, complex_end) 
             alignmentlist = re.split('\(|\)', alignment)
             alignmentlist = list(filter(None, alignmentlist))
@@ -190,7 +197,6 @@ def getRelevantContigCoordinates(contig):
             refdictstart = refdict[refstart_nicksite]
             while str(refdictstart) not in reflist:
                 refdictstart = refdictstart - 1
-                
             contigqstart = alignment_df.loc[str(refdictstart), 'querysite']
 
         if row['RefEndPos'] > complex_end:
@@ -244,7 +250,7 @@ def extract_molecules(contigs_list):
         os.system(cmd)
 
         ## Extract from xmap
-        print("Extracting molecules from molecule files for contig {}".format(contig))
+        print("Extracting molecules from molecule files")
         xmap_file = '{}/{}.xmap'.format(molecule_dir, map_filename)
         header = get_header_line(xmap_file)
         xmap_df = pd.read_csv(xmap_file, sep='\t', comment='#', names=header, index_col=None)
@@ -306,6 +312,8 @@ def main():
 
         output_fullcontigs_qcmap = '{}/{}_fullContigs_q.cmap'.format(output_dir, sample)
         output_file(cmap_df, output_fullcontigs_qcmap)
+
+        # getRelevantContigCoordinates(1220)
 
         extract_molecules(contigs_list)
         print("{} full-length contigs for sample {}".format(len(contigs_list), sample))
