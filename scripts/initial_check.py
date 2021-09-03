@@ -37,6 +37,8 @@ with open("config_files/config", 'r') as c:
         if len(line) > 0:
             if "SAMPLE" in line[0]:
                 sample = (' '.join([str(char) for char in line])).split('=')[1]
+            if "MAX_GAP" in line[0]:
+                max_gap = int(re.sub('[MAX_GAP=]', '', line[0]))
             elif "COMPRESSION_TYPE" in line[0]:
                 compression_type = (' '.join([str(char) for char in line])).split('=')[1]
             elif "COMPLEX_CHR" in line[0]:
@@ -114,7 +116,6 @@ def open_xmap_file(xmap_file, chrom, start, end):
     if sub_df.shape[0] > 0:
         ## Check if there is a gap between maps if sub_df is not empty
         ## Gap is currently set to 100kb
-        gap = 160000
         grouped = sub_df.groupby("QryContigID")
         rows_loop = []
         for name, group in grouped:
@@ -125,12 +126,13 @@ def open_xmap_file(xmap_file, chrom, start, end):
                 group = group.assign(shifted_start=group.RefStartPos.shift(-1)).fillna(0)
                 group = group.assign(shifted_end=group.RefEndPos.shift(-1)).fillna(0)
                 for index, row in group.iterrows():
-                    if row['shifted_start'] - row['RefEndPos'] <= gap:
+                    if row['shifted_start'] - row['RefEndPos'] <= max_gap:
                         rows_loop.append(row)
         temp_df = pd.DataFrame(rows_loop)
         contig_df = contig_df.append(pd.DataFrame(temp_df.iloc[:,:-2]))
         contig_df = contig_df.drop_duplicates()
 
+    print(contig_df)
     return contig_df
     
 
@@ -151,7 +153,6 @@ def closest(lst, K):
 ## Get coordinates of molecules relative to the contig
 def getRelevantContigCoordinates(contig):
     print("Processing contig {}".format(contig))
-    print("Getting relevant contig coordinates to molecule coordinates")
     merged_xmap_file = '{}/{}_fullContigs.xmap'.format(output_dir, sample)
     xmap_header = get_header_line(merged_xmap_file)
     merged_xmap_df = pd.read_csv(merged_xmap_file, sep='\t', comment='#', names=xmap_header, index_col=None)
@@ -164,7 +165,7 @@ def getRelevantContigCoordinates(contig):
     merged_rmap_df = pd.read_csv(merged_rmap, sep='\t', comment='#', names=header, index_col=None)
 
     ## Get relevant positions on contig
-    print("Getting relevant positions")
+    print("Getting relevant contig coordinates to molecule coordinates")
     temp_df = merged_xmap_df.query("QryContigID == @contig")
     rows_list = []
     for index, row in temp_df.iterrows():
@@ -173,6 +174,7 @@ def getRelevantContigCoordinates(contig):
         elif row['RefEndPos'] > complex_end:
             rows_list.append(row)
     contig_df = pd.DataFrame(rows_list, columns=xmap_header)
+    contig_df.to_csv("test.txt", sep='\t', index=None)
 
     for index, row in contig_df.iterrows():
         if row['RefStartPos'] < complex_start:
@@ -313,7 +315,7 @@ def main():
         output_fullcontigs_qcmap = '{}/{}_fullContigs_q.cmap'.format(output_dir, sample)
         output_file(cmap_df, output_fullcontigs_qcmap)
 
-        # getRelevantContigCoordinates(1220)
+        # getRelevantContigCoordinates(171)
 
         extract_molecules(contigs_list)
         print("{} full-length contigs for sample {}".format(len(contigs_list), sample))

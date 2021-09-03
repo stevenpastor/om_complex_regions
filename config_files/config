@@ -1,6 +1,9 @@
 # base sample name and its corresponding BNX:
-SAMPLE=11029A
+SAMPLE=11029B
 BNX=data/11029A_output/all.bnx.gz
+
+# maximum gap between multi-line maps:
+MAX_GAP = 160000
 
 # assembly compression type
 # tar or zip
@@ -16,12 +19,12 @@ COMPLEX_GENOME=hg38
 
 # chromosome of region
 # do not include "chr" here
-COMPLEX_CHR=X
+COMPLEX_CHR=6
 
 # start/end of complexity only
 # do not include any anchor padding
-COMPLEX_START=103888556
-COMPLEX_END=104144470
+COMPLEX_START=32457033
+COMPLEX_END=32739291
 
 # 5' and 3' padding outside the start and end
 # 400kb is a good start
