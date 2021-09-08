@@ -131,8 +131,8 @@ def open_xmap_file(xmap_file, chrom, start, end):
         temp_df = pd.DataFrame(rows_loop)
         contig_df = contig_df.append(pd.DataFrame(temp_df.iloc[:,:-2]))
         contig_df = contig_df.drop_duplicates()
+        contig_df = contig_df.sort_values(by=['QryContigID', 'RefStartPos'])
 
-    print(contig_df)
     return contig_df
     
 
@@ -174,10 +174,9 @@ def getRelevantContigCoordinates(contig):
         elif row['RefEndPos'] > complex_end:
             rows_list.append(row)
     contig_df = pd.DataFrame(rows_list, columns=xmap_header)
-    contig_df.to_csv("test.txt", sep='\t', index=None)
 
     for index, row in contig_df.iterrows():
-        if row['RefStartPos'] < complex_start:
+        if row['RefStartPos'] <= complex_start:
             alignment = row['Alignment']
             sub_qmap =  merged_qmap_df.query("CMapId == @contig")
             querydict = pd.Series(sub_qmap.Position.values, index=sub_qmap.SiteID).to_dict()
@@ -187,7 +186,6 @@ def getRelevantContigCoordinates(contig):
 
             ## Finds the nicking sites on the contig closest to region start and end
             refstart_nicksite = closest(keylist, complex_start)
-
             refend_nicksite = closest(keylist, complex_end) 
             alignmentlist = re.split('\(|\)', alignment)
             alignmentlist = list(filter(None, alignmentlist))
@@ -201,7 +199,7 @@ def getRelevantContigCoordinates(contig):
                 refdictstart = refdictstart - 1
             contigqstart = alignment_df.loc[str(refdictstart), 'querysite']
 
-        if row['RefEndPos'] > complex_end:
+        if row['RefEndPos'] >= complex_end:
             alignment = row['Alignment']
             sub_qmap =  merged_qmap_df.query("CMapId == @contig")
             querydict = pd.Series(sub_qmap.Position.values, index=sub_qmap.SiteID).to_dict()
@@ -315,7 +313,8 @@ def main():
         output_fullcontigs_qcmap = '{}/{}_fullContigs_q.cmap'.format(output_dir, sample)
         output_file(cmap_df, output_fullcontigs_qcmap)
 
-        # getRelevantContigCoordinates(171)
+        # # Test script
+        # getRelevantContigCoordinates(1682)
 
         extract_molecules(contigs_list)
         print("{} full-length contigs for sample {}".format(len(contigs_list), sample))
