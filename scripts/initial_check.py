@@ -115,14 +115,13 @@ def open_xmap_file(xmap_file, chrom, start, end):
     sub_df = xmap_df.query("RefStartPos >= @padded_start & RefStartPos <= @padded_end or RefEndPos >= @padded_start & RefEndPos <= @padded_end")
     if sub_df.shape[0] > 0:
         ## Check if there is a gap between maps if sub_df is not empty
-        ## Gap is currently set to 100kb
         grouped = sub_df.groupby("QryContigID")
         rows_loop = []
         for name, group in grouped:
             group_list = []
             group_list.extend(group['RefStartPos'].tolist())
             group_list.extend(group['RefEndPos'].tolist())
-            if min(group_list) < start and max(group_list) > end: 
+            if min(group_list) <= start and max(group_list) >= end: 
                 group = group.assign(shifted_start=group.RefStartPos.shift(-1)).fillna(0)
                 group = group.assign(shifted_end=group.RefEndPos.shift(-1)).fillna(0)
                 for index, row in group.iterrows():
@@ -314,7 +313,7 @@ def main():
         output_file(cmap_df, output_fullcontigs_qcmap)
 
         # # Test script
-        # getRelevantContigCoordinates(1682)
+        # getRelevantContigCoordinates(2920)
 
         extract_molecules(contigs_list)
         print("{} full-length contigs for sample {}".format(len(contigs_list), sample))
